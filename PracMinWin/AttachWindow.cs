@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using WinUIEx;
+using System.IO;
+
 
 namespace PracMinWin;
 
@@ -135,60 +137,88 @@ public class AttachWindow : Window {
         Attach();
     }
 
-    private void Attach() {
-        // If you have an address from the ComboBox:
-        var targetAddress = _targetComboBox.Text;
+    private void Attach()
+    {
+        Log("Attach() called");
 
-        if (string.IsNullOrWhiteSpace(targetAddress)) {
-            // Show an error dialog – in WinUI, you could use a ContentDialog
+        var targetAddress = _targetComboBox.Text;
+        Log($"Target address from ComboBox: '{targetAddress}'");
+
+        if (string.IsNullOrWhiteSpace(targetAddress))
+        {
+            Log("Empty address detected, showing alert");
             ShowAlert("Empty address", "Please enter a valid address.");
             return;
         }
 
-        // Start spinner
+        Log("Starting attach procedure: enabling progress ring and disabling controls");
         _progressRing.IsActive = true;
         _progressRing.Visibility = Visibility.Visible;
         _attachButton.IsEnabled = false;
         _targetComboBox.IsEnabled = false;
 
-        // If you have a logic that saves settings:
         Settings.Default.Set($"Target.{_targetType.Name}.LastAddress", targetAddress);
+        Log($"Saved last address to settings for target type {_targetType.Name}");
 
         var target = CreateTargetInstance(targetAddress);
+        Log($"Created target instance of type {_targetType.Name} with address '{targetAddress}'");
 
         target.Start((success, message) => {
+            Log($"Attach callback: success={success}, message='{message}', TitleId='{target.TitleId}'");
+
             _progressRing.IsActive = false;
             _progressRing.Visibility = Visibility.Collapsed;
             _attachButton.IsEnabled = true;
             _targetComboBox.IsEnabled = true;
 
-            if (success) {
-                if (target.TitleId == "") {
+            if (success)
+            {
+                if (string.IsNullOrEmpty(target.TitleId))
+                {
+                    Log("No game running detected, showing alert and stopping target");
                     ShowAlert("No game running", "You must run a game before attaching.");
                     target.Stop();
                     return;
                 }
 
+                Log($"Loading modules for title {target.TitleId}");
                 var modules = PracManCore.Scripting.Application.GetModulesForTitle(target.TitleId);
 
-                foreach (var module in modules) {
-                    if (module.Settings.Get<bool>("General.autorun")) {
-                        try {
+                foreach (var module in modules)
+                {
+                    Log($"Checking module for autorun: {module.GetType().Name}");
+                    if (module.Settings.Get<bool>("General.autorun"))
+                    {
+                        try
+                        {
+                            Log($"Loading module {module.GetType().Name}");
                             module.Load(target);
-                        } catch (ScriptException exception) {
-                            ShowAlert("Failed to load", exception.Message);
-                        } catch (Exception exception) {
-                            ShowAlert("Failed to load", exception.Message);
+                        }
+                        catch (ScriptException ex)
+                        {
+                            Log($"ScriptException loading module {module.GetType().Name}: {ex.Message}");
+                            ShowAlert("Failed to load", ex.Message);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"Exception loading module {module.GetType().Name}: {ex.Message}");
+                            ShowAlert("Failed to load", ex.Message);
                         }
                     }
                 }
-            } else {
+
+                Log("Attach process completed successfully.");
+            }
+            else
+            {
+                Log($"Attach failed with message: {message ?? "unknown error"}");
                 ShowAlert("Failed to attach", message ?? "An unknown error occurred.");
             }
         });
 
         _attachButton.Content = "Attach";
     }
+
 
     public void SetTargetType(Type targetType) {
         _targetType = targetType;
@@ -242,6 +272,12 @@ public class AttachWindow : Window {
 
         discoverTargetsMethod.Invoke(null, [callback]);
     }
+
+    public static void Log(string message)
+    {
+        File.AppendAllText("C:\\temp\\pracman.log", $"{DateTime.Now:HH:mm:ss.fff} - {message}\n");
+    }
+
 
     // If you’re storing recents, etc.:
     // private List<string> GetRecentItems(string targetName) { ... }

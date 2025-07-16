@@ -52,29 +52,44 @@ public class PCSX2(string slot) : Target(slot) {
     private readonly List<Pcsx2MemorySubItem> _subItems = [];
     private readonly Mutex _subMutex = new(false);
     private bool _memoryWorkerStarted = false;
-    
-    public override bool Start(AttachedCallback callback) {
-        // _address must be an integer
-        if (!int.TryParse(_address, out int slot)) {
+
+    public override bool Start(AttachedCallback callback)
+    {
+        Log($"[Ratchet2.Start] Called with address '{_address}'");
+
+        if (!int.TryParse(_address, out int slot))
+        {
+            Log("[Ratchet2.Start] Invalid slot address");
             callback(false, "Invalid slot");
             return false;
         }
-        
-        try {
+
+        try
+        {
             _pine = new PINE(slot);
+            Log("[Ratchet2.Start] PINE instance created");
+
             callback(true, null);
-            
             Application.ActiveTargets.Add(this);
-            
+            Log("[Ratchet2.Start] Target added to ActiveTargets");
+
             return true;
-        } catch (SocketException ex) {
+        }
+        catch (SocketException ex)
+        {
+            Log($"[Ratchet2.Start] SocketException: {ex.Message}");
             callback(false, $"Couldn't open IPC port {slot}. Did you enable IPC in PCSX2 (Advanced -> PINE)? Make sure the port is correct and not already in use.");
             return false;
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
+            Log($"[Ratchet2.Start] Exception: {ex.Message}");
             callback(false, "Unknown error: " + ex.Message);
             return false;
         }
     }
+
+
 
     public override bool Stop() {
         base.Stop();
@@ -105,44 +120,114 @@ public class PCSX2(string slot) : Target(slot) {
         }
     }
 
+    private bool ReconnectPine(int retries = 3, int delayMs = 500)
+    {
+        for (int attempt = 1; attempt <= retries; attempt++)
+        {
+            try
+            {
+                Log($"[ReconnectPine] Tentative {attempt} de reconnexion");
+
+                if (!int.TryParse(_address, out int slot))
+                    return false;
+
+                _pine?.Close();
+                _pine = new PINE(slot);
+
+                if (_pine.IsConnected())
+                {
+                    // Test le backend
+                    try
+                    {
+                        var status = _pine.Status(); // ou _pine.GameId(), si Status() pas dispo
+                        Log("[ReconnectPine] Connexion réussie et backend actif");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"[ReconnectPine] Backend inactif après connexion : {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Log("[ReconnectPine] _pine.IsConnected() == false");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[ReconnectPine] Exception à l’essai {attempt} : {ex.Message}");
+            }
+
+            Thread.Sleep(delayMs);
+        }
+
+        Log("[ReconnectPine] Toutes les tentatives échouées");
+        return false;
+    }
+
+
+
     public override string GetGameTitleID()
     {
-        Console.WriteLine("[GetGameTitleID] Appelé");
-        System.Diagnostics.Debug.WriteLine("[GetGameTitleID] Appelé");
+        Log("[GetGameTitleID] Appelé");
 
         if (_pine == null)
         {
-            Console.WriteLine("[GetGameTitleID] _pine est null");
-            System.Diagnostics.Debug.WriteLine("[GetGameTitleID] _pine est null");
+            Log("[GetGameTitleID] _pine est null");
             throw new TargetException("Can't get title: Not connected");
         }
 
         if (!_pine.IsConnected())
         {
-            Console.WriteLine("[GetGameTitleID] PINE non connecté");
-            System.Diagnostics.Debug.WriteLine("[GetGameTitleID] PINE non connecté");
-            throw new TargetException("Can't get title: PINE not connected");
+            Log("[GetGameTitleID] PINE non connecté, tentative de reconnexion");
+            if (!ReconnectPine())
+            {
+                Log("[GetGameTitleID] Reconnexion échouée");
+                throw new TargetException("Can't get title: PINE not connected");
+            }
         }
 
         try
         {
-            Console.WriteLine("[GetGameTitleID] Appel à _pine.GameId()");
-            System.Diagnostics.Debug.WriteLine("[GetGameTitleID] Appel à _pine.GameId()");
-
+            Log("[GetGameTitleID] Appel à _pine.GameId()");
             string gameId = _pine.GameId();
-
-            Console.WriteLine("[GetGameTitleID] GameId = " + gameId);
-            System.Diagnostics.Debug.WriteLine("[GetGameTitleID] GameId = " + gameId);
-
+            Log("[GetGameTitleID] GameId = " + gameId);
             return string.IsNullOrEmpty(gameId) ? "" : gameId;
+        }
+        catch (IOException ex)
+        {
+            Log("[GetGameTitleID] IOException capturée : " + ex.Message);
+            Log("[GetGameTitleID] Tentative de reconnexion suite à IOException");
+
+            if (ReconnectPine())
+            {
+                try
+                {
+                    string gameId = _pine.GameId();
+                    Log("[GetGameTitleID] GameId après reconnexion = " + gameId);
+                    return string.IsNullOrEmpty(gameId) ? "" : gameId;
+                }
+                catch (Exception retryEx)
+                {
+                    Log("[GetGameTitleID] Échec après reconnexion : " + retryEx.Message);
+                    throw new TargetException("Can't get title: PINE reconnection failed");
+                }
+            }
+            else
+            {
+                throw new TargetException("Can't get title: Reconnection failed");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine("[GetGameTitleID] Exception capturée : " + ex);
-            System.Diagnostics.Debug.WriteLine("[GetGameTitleID] Exception capturée : " + ex);
-            throw new TargetException("Can't get title: PINE errorr");
+            Log("[GetGameTitleID] Exception capturée : " + ex.Message);
+            throw new TargetException("Can't get title: PINE error");
         }
     }
+
+
+
+
 
 
     public override int MemSubIDForAddress(uint address) {
@@ -309,6 +394,11 @@ public class PCSX2(string slot) : Target(slot) {
     private void StartMemorySubWorker() {
         Thread thread = new Thread(MemorySubWorker);
         thread.Start();
+    }
+
+    public static void Log(string message)
+    {
+        File.AppendAllText("C:\\temp\\pracman.log", $"{DateTime.Now:HH:mm:ss.fff} - {message}\n");
     }
 
     private void StopMemorySubWorker() {

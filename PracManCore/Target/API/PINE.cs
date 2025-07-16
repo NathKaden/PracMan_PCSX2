@@ -238,40 +238,32 @@ public class PINE : IDisposable {
 
     public string GameId()
     {
-        try
+        Console.WriteLine("[GameId] Création de la commande OP_GAMEID");
+        byte[] cmd = Mkcmd((byte)Opcode.OP_GAMEID);
+
+        Console.WriteLine("[GameId] Envoi de la commande");
+        Runcmd(cmd);
+
+        Console.WriteLine("[GameId] Lecture de l'entête");
+        var (length, returnCode) = ReadHeader();
+
+        Console.WriteLine($"[GameId] Header reçu : length={length}, returnCode={returnCode}");
+        if (returnCode != 0)
         {
-            Console.WriteLine("[PINE.GameId] Envoi de la commande OP_GAMEID");
-            byte[] cmd = Mkcmd((byte)Opcode.OP_GAMEID);
-
-            Console.WriteLine("[PINE.GameId] Runcmd...");
-            Runcmd(cmd);
-
-            Console.WriteLine("[PINE.GameId] Lecture du header...");
-            var (length, returnCode) = ReadHeader();
-            Console.WriteLine($"[PINE.GameId] Header reçu : length = {length}, returnCode = {returnCode}");
-
-            if (returnCode != 0)
-            {
-                Console.WriteLine("[PINE.GameId] returnCode != 0 → IOException");
-                throw new IOException();
-            }
-
-            Console.WriteLine("[PINE.GameId] Lecture de la longueur de la chaîne...");
-            int strlen = reader.ReadInt32();
-            Console.WriteLine($"[PINE.GameId] Longueur de la chaîne : {strlen}");
-
-            byte[] chars = reader.ReadBytes(strlen);
-            string gameId = Encoding.UTF8.GetString(chars).TrimEnd('\0');
-            Console.WriteLine($"[PINE.GameId] GameID reçu : {gameId}");
-
-            return gameId;
+            Console.WriteLine("[GameId] Code retour != 0, levée IOException");
+            throw new IOException();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("[PINE.GameId] Exception : " + ex);
-            throw;
-        }
+
+        int strlen = reader.ReadInt32();
+        Console.WriteLine($"[GameId] Longueur chaîne reçue : {strlen}");
+
+        byte[] chars = reader.ReadBytes(strlen);
+        string gameId = Encoding.UTF8.GetString(chars).TrimEnd('\0');
+
+        Console.WriteLine($"[GameId] GameId reçu : {gameId}");
+        return gameId;
     }
+
 
 
     public string GameUuid() {
