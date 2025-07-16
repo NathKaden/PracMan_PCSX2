@@ -90,6 +90,7 @@ public class AttachWindow : Window {
         // Simulate _targets
         _targets.Add(typeof(Ratchetron));
         _targets.Add(typeof(RPCS3));
+        _targets.Add(typeof(PCSX2));
 #if DEBUG
         _targets.Add(typeof(DummyTarget));
 #endif

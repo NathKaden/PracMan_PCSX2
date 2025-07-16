@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -52,6 +52,18 @@ public class PINE : IDisposable {
         writer = new BinaryWriter(stream);
         reader = new BinaryReader(stream);
     }
+    public bool IsConnected()
+    {
+        try
+        {
+            return client != null && client.Connected && !(client.Poll(1, SelectMode.SelectRead) && client.Available == 0);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
 
     private string GetSocketPath(int slot) {
         string targetName = "rpcs3";
@@ -224,16 +236,43 @@ public class PINE : IDisposable {
         return Encoding.UTF8.GetString(chars).TrimEnd('\0');
     }
 
-    public string GameId() {
-        byte[] cmd = Mkcmd((byte)Opcode.OP_GAMEID);
-        Runcmd(cmd);
-        var (length, returnCode) = ReadHeader();
-        if (returnCode != 0)
-            throw new IOException();
-        int strlen = reader.ReadInt32();
-        byte[] chars = reader.ReadBytes(strlen);
-        return Encoding.UTF8.GetString(chars).TrimEnd('\0');
+    public string GameId()
+    {
+        try
+        {
+            Console.WriteLine("[PINE.GameId] Envoi de la commande OP_GAMEID");
+            byte[] cmd = Mkcmd((byte)Opcode.OP_GAMEID);
+
+            Console.WriteLine("[PINE.GameId] Runcmd...");
+            Runcmd(cmd);
+
+            Console.WriteLine("[PINE.GameId] Lecture du header...");
+            var (length, returnCode) = ReadHeader();
+            Console.WriteLine($"[PINE.GameId] Header reçu : length = {length}, returnCode = {returnCode}");
+
+            if (returnCode != 0)
+            {
+                Console.WriteLine("[PINE.GameId] returnCode != 0 → IOException");
+                throw new IOException();
+            }
+
+            Console.WriteLine("[PINE.GameId] Lecture de la longueur de la chaîne...");
+            int strlen = reader.ReadInt32();
+            Console.WriteLine($"[PINE.GameId] Longueur de la chaîne : {strlen}");
+
+            byte[] chars = reader.ReadBytes(strlen);
+            string gameId = Encoding.UTF8.GetString(chars).TrimEnd('\0');
+            Console.WriteLine($"[PINE.GameId] GameID reçu : {gameId}");
+
+            return gameId;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[PINE.GameId] Exception : " + ex);
+            throw;
+        }
     }
+
 
     public string GameUuid() {
         byte[] cmd = Mkcmd((byte)Opcode.OP_GAMEUUID);
