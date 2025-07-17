@@ -2,27 +2,18 @@ require 'Game'
 require 'UnlocksWindow'
 require 'FlagViewWindow'
 
-
 TrainerWindow = class("TrainerWindow", BaseWindow)
 
-Log = function(msg)
-    local f = io.open("C:\\temp\\pracman.log", "a")
-    f:write(os.date("%H:%M:%S") .. " - [Lua] " .. msg .. "\n")
-    f:close()
-end
 function TrainerWindow:initialize()
-    Log("[TrainerWindow] initialize() appelé")
-
     BaseWindow.initialize(self, true)
-
+    
     self.game = Game()
-    Log("[TrainerWindow] Game() initialisé")
-
+    
     self.unlocksWindow = nil
 end
 
 function TrainerWindow:OnLoad()
-    self:SetTitle("Ratchet & Clank 2 (PAL)")
+    self:SetTitle("Ratchet & Clank 2 (NTSC)")
 
     AddMenu("Trainer", function(menu)
         menu:AddItem("Level flag viewer...", function()

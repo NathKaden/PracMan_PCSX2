@@ -1,0 +1,7 @@
+[General]
+name = "Ratchet & Clank 2 - SCUS-97268 (NTSC) Trainer"
+entry = "main.lua"
+autorun = true
+supported_targets = ["pcsx2"]
+
+

@@ -27,10 +27,11 @@ public class PCSX2(string slot) : Target(slot) {
     }
     
     public new static string PlaceholderAddress() {
-        return "28012";
+        return "28011";
     }
-    
+
     public new static void DiscoverTargets(DicoveredTargetsCallback callback) {
+        /*
         List<string> targets = [];
         
         // If not Windows, look for .sock files in /tmp
@@ -46,6 +47,8 @@ public class PCSX2(string slot) : Target(slot) {
         }
         
         callback(targets);
+        */
+        callback(["28011"]);
     }
 
     private PINE? _pine;

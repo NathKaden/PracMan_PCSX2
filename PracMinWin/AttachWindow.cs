@@ -184,6 +184,7 @@ public class AttachWindow : Window {
                 Log($"Loading modules for title {target.TitleId}");
                 var modules = PracManCore.Scripting.Application.GetModulesForTitle(target.TitleId);
 
+               
                 foreach (var module in modules)
                 {
                     Log($"Checking module for autorun: {module.GetType().Name}");

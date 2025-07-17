@@ -1,9 +1,4 @@
 require 'Item'
-Log = function(msg)
-    local f = io.open("C:\\temp\\pracman.log", "a")
-    f:write(os.date("%H:%M:%S") .. " - [Lua] " .. msg .. "\n")
-    f:close()
-end
 
 Game = class("Game")
 
@@ -11,9 +6,9 @@ function Game:initialize()
     self.address = {
         bolts = 0x201A79F8,
         position = {
-            x = 0x20189EA0,
-            y = 0x20189EA4,
-            z = 0x20189EA8
+            x = 0x20189EA0,--
+            y = 0x20189EA4,--
+            z = 0x20189EA8--
         },
         rotation = {
             x = 0x147F270,
@@ -25,14 +20,14 @@ function Game:initialize()
             y = 0x15D26E4,
             z = 0x15D26E8
         },
-        state = 0x1481474,
+        state = 0x2018C0B4,
         input = 0x147A430,
         analog = 0x147A60C,
-        shouldLoadPlanet = 0x156B050,
-        planetTarget = 0x156B054,
-        currentPlanet = 0x1329A3C,
+        shouldLoadPlanet = 0x1A8ED4,--
+        planetTarget = 0x1A8ED4,
+        currentPlanet = 0x1A79F0,--?
         ghostTimer = 0x147F3CE,
-        raritanium = 0x1329A94,
+        raritanium = 0x201A79FC,--
         challengeMode = 0x1329AA2,
         mobyInstances = 0x15927B0,
         mobyInstancesEnd = 0x15927B8,
@@ -43,8 +38,8 @@ function Game:initialize()
         prevHeldWeapon = 0x1329A9F,
         ammoArray = 0x148185C,
         expEconomy = 0x1329AA8,
-        playerHealth = 0x14816AC,
-        healthExp = 0x1329AA4,
+        playerHealth = 0x2018C36C,--
+        healthExp = 0x2018C2EC,--
         imInShortcuts = 0x135268C,
         shortcutsIndex = 0x1352684,
         savedRaceIndex = 0x1A4D7E0,
@@ -94,30 +89,30 @@ function Game:initialize()
     }
     
     self.weapons = {
-        Item("Lancer", 0x1481A9E),
-        Item("Gravity-Bomb", 0x1481AAA),
-        Item("Chopper", 0x1481A96),
-        Item("Seeker-Gun", 0x1481A98),
-        Item("Pulse-Rifle", 0x1481A97),
-        Item("Miniturret-Glove", 0x1481AA9),
-        Item("Blitz-Gun", 0x1481A9A),
-        Item("Shield-Charger", 0x1481AAD),
-        Item("Synthenoid", 0x1481A9F),
-        Item("Lava-Gun", 0x1481A9D),
-        Item("Bouncer", 0x1481AA5),
-        Item("Minirocket-Tube", 0x1481A9B),
-        Item("Plasma-Coil", 0x1481A9C),
-        Item("Hoverbomb-Gun", 0x1481A99),
-        Item("Spiderbot-Glove", 0x1481AA0),
-        Item("Sheepinator", 0x1481A90),
-        Item("Tesla-Claw", 0x1481A92),
-        Item("Bomb-Glove", 0x1481A8c),
-        Item("Wolloper", 0x1481AB5),
-        Item("Visi-bomb-Gun", 0x1481A8e),
-        Item("Decoy Glove", 0x1481A91),
-        Item("Zodiac", 0x1481AAB),
-        Item("RYNO-II", 0x1481AAC),
-        Item("Clank-Zapper", 0x1481A89)
+        Item("Lancer", 0x201A7B16),--
+        Item("Gravity-Bomb", 0x201A7B22),--
+        Item("Chopper", 0x201A7B0E),--
+        Item("Seeker-Gun", 0x201A7B10),--
+        Item("Pulse-Rifle", 0x201A7B0F),--
+        Item("Miniturret-Glove", 0x201A7B21),--
+        Item("Blitz-Gun", 0x201A7B12),--
+        Item("Shield-Charger", 0x201A7B25),--
+        Item("Synthenoid", 0x201A7B17),--
+        Item("Lava-Gun", 0x201A7B15),--
+        Item("Bouncer", 0x201A7B1D),--
+        Item("Minirocket-Tube", 0x201A7B13),--
+        Item("Plasma-Coil", 0x201A7B14),--
+        Item("Hoverbomb-Gun", 0x201A7B11),--
+        Item("Spiderbot-Glove", 0x201A7B18),--
+        Item("Sheepinator", 0x201A7B08),--
+        Item("Tesla-Claw", 0x201A7B0A),--
+        Item("Bomb-Glove", 0x201A7B04),--
+        Item("Wolloper", 0x201A7B2D),--
+        Item("Visi-bomb-Gun", 0x201A7B06),--
+        Item("Decoy Glove", 0x201A7B09),--
+        Item("Zodiac", 0x201A7B23),--
+        Item("RYNO-II", 0x201A7B24),--
+        Item("Clank-Zapper", 0x201A7B01)--
     }
     
     self.gadgets = {
@@ -196,7 +191,8 @@ function Game:LoadPosition(savedPositionIndex)
 end
 
 function Game:Die()
-    Log("die executeee")
+    Log("die");
+    --die
     Target:WriteMemory(self.address.position.z, 0xC2480000)
 end
 
@@ -234,9 +230,8 @@ function Game:SetChallengeMode(value)
 end
 
 function Game:SetBoltCount(value)
-    Log("setboltcount executeee")
-    print("setboltcount")
-    print(value)
+    Log("bolt")
+    Log(value)
     Target:WriteInt(self.address.bolts, value)
 end 
 
